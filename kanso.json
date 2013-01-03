@@ -1,0 +1,10 @@
+{
+    "name": "couchapp-node-module",
+    "version": "0.0.1",
+    "categories": ["build-tools"],
+    "description": "Makes a couchapp also an npm instalable module.",
+    "url": "https://github.com/ryanramage/couchapp-node-module",
+    "preprocessors": {
+        "compile": "build/compile"
+    }
+}
