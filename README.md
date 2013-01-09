@@ -10,6 +10,7 @@ Usage
 -----
 
 Add kanso-gardener to your dependecies in kanso.json
+
 		"name" : "test",
 		"version" : "1.0.0",
         "dependencies": {
