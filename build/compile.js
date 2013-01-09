@@ -101,7 +101,14 @@ function read_package_json(package_folder, kanso_json, callback) {
 
 function write_package_json(package_json, package_folder, callback) {
     var package_json_file = path.join(package_folder, 'package.json');
-    fs.writeFile(package_json_file, JSON.stringify(package_json), callback);
+    fs.writeFile(package_json_file, JSON.stringify(package_json), function(err){
+        if (err) return callback(err);
+
+        // the following allows a package.tgz to have the same hash if nothing has changed
+        var time = new Date(0);
+        fs.utimes(package_json_file, time, time, callback);
+
+    });
 }
 
 
