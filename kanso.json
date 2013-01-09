@@ -1,9 +1,9 @@
 {
-    "name": "couchapp-node-module",
+    "name": "kanso-gardener",
     "version": "0.0.1",
     "categories": ["build-tools"],
-    "description": "Makes a couchapp also an npm instalable module.",
-    "url": "https://github.com/ryanramage/couchapp-node-module",
+    "description": "Attach a npm module to your couchapp to be installed and run by a gardener.",
+    "url": "https://github.com/kanso/kanso-gardener",
     "preprocessors": {
         "compile": "build/compile"
     }

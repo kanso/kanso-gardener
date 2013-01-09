@@ -5,6 +5,47 @@ var path = require('path'),
     npm_cmd = "npm pack ";
 
 
+module.exports = {
+    run : function(root, path_loc, kanso_json, doc, callback) {
+        var folder_name = 'node_module';
+        if (kanso_json.node_module_folder) {
+            folder_name = kanso_json.node_module_folder;
+        }
+        var working_folder_name = folder_name + '_working';
+
+        var src_folder = path.join(root, folder_name),
+            package_folder = path.join(root, working_folder_name),
+            generated_package_json,
+            expected_tgz_name;
+        async.waterfall([
+            function(callback) {
+                copy_node_dir(src_folder, package_folder, callback);
+            },
+            function(callback) {
+                read_package_json(package_folder, kanso_json, callback);
+            },
+            function(package_json, callback) {
+                generated_package_json = package_json;
+                write_package_json(package_json, package_folder, callback);
+            },
+            function(callback) {
+                generate_tgz(package_folder, callback);
+            },
+            function(callback) {
+                expected_tgz_name = generate_tgz_name(generated_package_json);
+                attach_tgz(expected_tgz_name, doc, callback);
+            },
+            function(doc, callback) {
+                add_node_info(doc, expected_tgz_name, callback);
+            }
+        ], function(err, doc) {
+            clean_up(package_folder, expected_tgz_name,  function(err2) {
+                callback(err, doc);
+            })
+        });
+    }
+}
+
 function generate_full_command(package_folder) {
     return npm_cmd + ' ' + package_folder;
 }
@@ -23,20 +64,38 @@ function clean_up(dir, tgz_file, callback) {
             fs.unlink(tgz_file, cb);
         }
     ], callback);
+}
 
-
-    
+function sane_package_json(kanso_json) {
+    var package_json = _.extend({}, kanso_json);
+    _.each(['_id',
+            'minify',
+            'dependencies', 
+            'load', 
+            'modules', 
+            'attachments', 
+            'dust', 
+            'duality', 
+            'coffee-script', 
+            'less', 
+            'bundledDependencies'], 
+    function(field) {
+        if (package_json[field]) delete package_json[field];
+    })
+    return package_json;
 }
 
 function read_package_json(package_folder, kanso_json, callback) {
     var package_json = path.join(package_folder, 'package.json');
+    var sane_defaults = sane_package_json(kanso_json);
     fs.readFile(package_json, function(err, content) {
-        if (err) return  callback(err);
+        if (err.code !== 'ENOENT') return  callback(err);
         var json = {};
         if (content) {
             json = JSON.parse(content);
         }
-        callback(null, _.defaults(json, kanso_json));
+        var p_json = _.defaults(json, sane_defaults);
+        callback(null, p_json);
     });
 }
 
@@ -52,7 +111,7 @@ function generate_tgz_name(package_json) {
 
 function generate_tgz(package_folder, callback) {
     var cmd = generate_full_command(package_folder);
-    console.log('running: ' + cmd);
+    //console.log('running: ' + cmd);
 
     exec(cmd, function(err, stdout, stderr) {
         console.log(stdout);
@@ -78,58 +137,12 @@ function attach_tgz(tgz_name, doc, callback) {
 }
 
 
-function add_node_info(doc, package_json, callback) {
-    if (!doc.versions) doc.versions = {};
-    doc.versions[package_json.version] = package_json;
-    doc['dist-tags'] = {};
-    doc['dist-tags'].latest = package_json.version;
-    doc.time = {};
+function add_node_info(doc, expected_tgz_name, callback) {
+
+    doc.node_module = expected_tgz_name;
+
+    if (!doc.kanso) doc.kanso = {};
+    if (!doc.kanso.config) doc.kanso.config = {};
+    doc.kanso.config.node_module = expected_tgz_name;
     callback(null, doc);
-}
-
-
-
-module.exports = {
-    run : function(root, path_loc, kanso_json, doc, callback) {
-        var folder_name = '_node_module';
-        var working_folder_name = folder_name + '_working';
-        if (kanso_json.node_module_folder) {
-            folder_name = kanso_json.node_module_folder;
-        }
-        var src_folder = path.join(root, folder_name),
-            package_folder = path.join(root, working_folder_name),
-            generated_package_json,
-            expected_tgz_name;
-        async.waterfall([
-            function(callback) {
-                console.log('copy node dir...');
-                copy_node_dir(src_folder, package_folder, callback);
-            },
-            function(callback) {
-                console.log('reading package.json...');
-                read_package_json(package_folder, kanso_json, callback);
-            },
-            function(package_json, callback) {
-                console.log('writing updated package.json...');
-                generated_package_json = package_json;
-                write_package_json(package_json, package_folder, callback);
-            },
-            function(callback) {
-                generate_tgz(package_folder, callback);
-            },
-            function(callback) {
-                console.log('packing node module...');
-                expected_tgz_name = generate_tgz_name(generated_package_json);
-                attach_tgz(expected_tgz_name, doc, callback);
-            },
-            function(doc, callback) {
-                console.log('adding info to ddoc...');
-                add_node_info(doc, generated_package_json, callback);
-            }
-        ], function(err, doc) {
-            clean_up(package_folder, expected_tgz_name,  function(err2) {
-                callback(err, doc);
-            })
-        });
-    }
 }
