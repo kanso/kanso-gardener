@@ -88,8 +88,9 @@ function sane_package_json(kanso_json) {
 function read_package_json(package_folder, kanso_json, callback) {
     var package_json = path.join(package_folder, 'package.json');
     var sane_defaults = sane_package_json(kanso_json);
+    console.log(package_json);
     fs.readFile(package_json, function(err, content) {
-        if (err.code !== 'ENOENT') return  callback(err);
+        if (err && err.code !== 'ENOENT') return  callback(err);
         var json = {};
         if (content) {
             json = JSON.parse(content);
@@ -118,7 +119,7 @@ function generate_tgz_name(package_json) {
 
 function generate_tgz(package_folder, callback) {
     var cmd = generate_full_command(package_folder);
-    //console.log('running: ' + cmd);
+    console.log('running: ' + cmd);
 
     exec(cmd, function(err, stdout, stderr) {
         console.log(stdout);
