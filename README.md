@@ -68,5 +68,6 @@ You will see output like this
 
 Now you can visit http://localhost:5984/_gardener/test/_design/test and see 'Hello World'
 
+You can specify multiple servers by adding a node_module_folders with the names of the folders separated by commas, for example: 
 
-
+    "node_module_folders": "sentinel,watcher"
